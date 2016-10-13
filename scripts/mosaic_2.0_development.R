@@ -1,14 +1,12 @@
+##mosaic_2.0_development.R
+
+##The analysis that led up to the MOSAIC classifier, June 2016. Version 1 ("old model") was constructed from ~4k exomes.
+
 load('/net/shendure/vol3/data/nobackup/hauser/Shendure/msi/tcga_loci_results_050315.robj')
-#load('/net/shendure/vol3/data/nobackup/hauser/Shendure/msi/sampledata_042315.robj')
-#load('/net/shendure/vol3/data/nobackup/hauser/Shendure/msi/sampleinfo_042315.robj')
 load('/net/shendure/vol3/data/nobackup/hauser/Shendure/msi/tcga_locusinfo.robj')
 load('/net/shendure/vol3/data/nobackup/hauser/Shendure/msi/finalsampledata_062216.robj')
 
 column_names<-as.character(as.matrix(read.table('/net/shendure/vol7/stevesal/MSI_TCGA_project/TCGA_Analysis_header.txt',header=F,sep='\t')))
-
-#for combining all individuals
-#cd OV_tumor_normal_comparisons
-#awk 'NR==1 {print; next} FNR==1 {next} {print FILENAME " \t " $0}' *.txt > all.txt &
 
 source('~/helper_functions.R')
 require(qvalue)
@@ -17,75 +15,26 @@ require(doMC)
 require(reshape2)
 require(plyr)
 require(scales)
+require(data.table)
 
-#load('/net/shendure/vol7/stevesal/MSI_TCGA_project/robjs/TCGA_subset_with_MSI_merged_full_analysis_duplicates_eliminated.robj')
 
-#setkey(data,SAMPLE_NAME)
-#system.time(data['TCGA-B5-A1MU',TUMOR_TYPE := 'UCEC'])
-#system.time(data['TCGA-FI-A2EW',TUMOR_TYPE := 'UCEC'])
-#system.time(data['TCGA-B5-A1MU',MSI_STATUS := 'MSS'])
-#system.time(data['TCGA-FI-A2EW',MSI_STATUS := 'ND'])
-#data<-droplevels.data.table(data)
+data2<-fread('/net/shendure/vol7/stevesal/MSI_TCGA_project/robjs/TCGA_subset_with_MSI_merged_full_analysis_msi_values_converted_to_numeric_duplicates_eliminated_post_review_exomes_added_062416.txt', sep='\t', showProgress=T)
 
-install.packages("data.table", type = "source",
-    repos = "http://Rdatatable.github.io/data.table")
-
-#save(data, file='/net/shendure/vol7/stevesal/MSI_TCGA_project/robjs/TCGA_subset_with_MSI_merged_full_analysis_duplicates_eliminated_062316.robj')
-
-#load('/net/shendure/vol7/stevesal/MSI_TCGA_project/robjs/TCGA_subset_with_MSI_merged_full_analysis_duplicates_eliminated_062316.robj')
-#fwrite(data,'/net/shendure/vol7/stevesal/MSI_TCGA_project/robjs/TCGA_subset_with_MSI_merged_full_analysis_duplicates_eliminated_062316.txt', sep='\t', quote=F)
-
-#load('/net/shendure/vol7/stevesal/MSI_TCGA_project/robjs/ucec_extended_exomes.robj')
-#fwrite(ucecnew,'/net/shendure/vol7/stevesal/MSI_TCGA_project/robjs/ucec_extended_exomes.txt', sep='\t', quote=F)
-#load('/net/shendure/vol7/stevesal/MSI_TCGA_project/robjs/coad_extended_exomes.robj')
-#fwrite(coadnew,'/net/shendure/vol7/stevesal/MSI_TCGA_project/robjs/coad_extended_exomes.txt', sep='\t', quote=F)
-#system.time(load('/net/shendure/vol7/stevesal/MSI_TCGA_project/robjs/read_extended_exomes.robj')) #36s, ~100MB
-#system.time(fwrite(readnew,'/net/shendure/vol7/stevesal/MSI_TCGA_project/robjs/read_extended_exomes.txt', sep='\t', quote=F)) #15s
-#load('/net/shendure/vol7/stevesal/MSI_TCGA_project/robjs/stad_extended_exomes.robj')
-#fwrite(stadnew,'/net/shendure/vol7/stevesal/MSI_TCGA_project/robjs/stad_extended_exomes.txt', sep='\t', quote=F)
-
-load('/net/shendure/vol7/stevesal/MSI_TCGA_project/robjs/STAD_1-14_merged_full_analysis.robj')
-system.time(fwrite(stad,'/net/shendure/vol7/stevesal/MSI_TCGA_project/robjs/STAD_1-14_merged_full_analysis.txt', sep='\t', quote=F)) 
-
-#system.time(save(readnew, file='/net/shendure/vol7/stevesal/MSI_TCGA_project/robjs/read_extended_exomes_test.robj')) #76s
-#system.time(fwrite(readnew,'/net/shendure/vol7/stevesal/MSI_TCGA_project/robjs/read_extended_exomes.txt', sep='\t', quote=F)) #15s
-#system.time(readnew2<-fread('/net/shendure/vol7/stevesal/MSI_TCGA_project/robjs/read_extended_exomes.txt', sep='\t')) #21s, ~800 MB
-
-data<-fread('/net/shendure/vol7/stevesal/MSI_TCGA_project/robjs/TCGA_subset_with_MSI_merged_full_analysis_duplicates_eliminated_062316.txt', sep='\t')
-
-ucecnew<-fread('/net/shendure/vol7/stevesal/MSI_TCGA_project/robjs/ucec_extended_exomes.txt', sep='\t')
-coadnew<-fread('/net/shendure/vol7/stevesal/MSI_TCGA_project/robjs/coad_extended_exomes.txt', sep='\t')
-readnew<-fread('/net/shendure/vol7/stevesal/MSI_TCGA_project/robjs/read_extended_exomes.txt', sep='\t')
-stadnew<-fread('/net/shendure/vol7/stevesal/MSI_TCGA_project/robjs/stad_extended_exomes.txt', sep='\t')
-
-#newdat<-rbindlist(list(ucecnew, coadnew, readnew, stadnew)) #350 million rows
-#system.time(fwrite(newdat,'/net/shendure/vol7/stevesal/MSI_TCGA_project/robjs/new_TCGA_subset_with_MSI_merged_full_analysis_duplicates_eliminated_062316.txt', sep='\t', quote=F))
-newdat<-fread('/net/shendure/vol7/stevesal/MSI_TCGA_project/robjs/new_TCGA_subset_with_MSI_merged_full_analysis_duplicates_eliminated_062316.txt', sep='\t')
-
-install.packages("data.table", type = "source", repos = "http://Rdatatable.github.io/data.table")
-
-cd /net/shendure/vol7/stevesal/MSI_TCGA_project/robjs/
-awk 'FNR==1 && NR!=1{next;}{print}' TCGA_subset_with_MSI_merged_full_analysis_duplicates_eliminated_062316.txt STAD_1-14_merged_full_analysis.txt ucec_extended_exomes.txt coad_extended_exomes.txt read_extended_exomes.txt stad_extended_exomes.txt > TCGA_subset_with_MSI_merged_full_analysis_duplicates_eliminated_post_review_exomes_added_062316.txt &
-
-data2<-fread('/net/shendure/vol7/stevesal/MSI_TCGA_project/robjs/TCGA_subset_with_MSI_merged_full_analysis_msi_values_converted_to_numeric_duplicates_eliminated_post_review_exomes_added_062416.txt', sep='\t', showProgress=T) #43 min, 38 min after removing duplicates
-
-#data2<-rbindlist(list(data, stad, ucecnew, coadnew, readnew, stadnew))
 data2[,PEAK_DIFFERENCE_VALUE:=as.numeric(as.matrix(PEAK_DIFFERENCE_VALUE))]
 data2[,KS_VALUE:=as.numeric(as.matrix(KS_VALUE))]
 data2<-unique(data2,by=c("SAMPLE_NAME","LOCUS_COORDINATES"))
 fwrite(data2, '/net/shendure/vol7/stevesal/MSI_TCGA_project/robjs/TCGA_subset_with_MSI_merged_full_analysis_msi_values_converted_to_numeric_duplicates_eliminated_post_review_exomes_added_062416.txt', sep='\t')
-#went down from 1404 to 1269 samples
 
 loc1<-subset(data2, LOCUS_COORDINATES == "10:100008321-100008335")
 sampleinfo1n<-loc1
 save(sampleinfo1n,file='/net/shendure/vol3/data/nobackup/hauser/Shendure/msi/batch1_sampleinfo_post_review_062416.robj')
 
 data<-data2
-system.time(peak_avg<-data[,mean(PEAK_DIFFERENCE_VALUE,na.rm=T),by=SAMPLE_NAME]) #14s
-system.time(peak_sd<-data[,sd(PEAK_DIFFERENCE_VALUE,na.rm=T),by=SAMPLE_NAME]) #15s
-system.time(num_unstable_ks<-data[,length(intersect(which(KS_VALUE<0.05),which(PEAK_DIFFERENCE_VALUE>0))),by=SAMPLE_NAME]) #15s
-system.time(num_unstable<-data[,length(which(PEAK_DIFFERENCE_VALUE>0)),by=SAMPLE_NAME]) #10s
-system.time(num_na<-data[,length(which(is.na(PEAK_DIFFERENCE_VALUE)==T)),by=SAMPLE_NAME]) #10s
+system.time(peak_avg<-data[,mean(PEAK_DIFFERENCE_VALUE,na.rm=T),by=SAMPLE_NAME])
+system.time(peak_sd<-data[,sd(PEAK_DIFFERENCE_VALUE,na.rm=T),by=SAMPLE_NAME])
+system.time(num_unstable_ks<-data[,length(intersect(which(KS_VALUE<0.05),which(PEAK_DIFFERENCE_VALUE>0))),by=SAMPLE_NAME])
+system.time(num_unstable<-data[,length(which(PEAK_DIFFERENCE_VALUE>0)),by=SAMPLE_NAME])
+system.time(num_na<-data[,length(which(is.na(PEAK_DIFFERENCE_VALUE)==T)),by=SAMPLE_NAME])
 
 sampledat1n<-data.frame(sample_name=peak_avg$SAMPLE_NAME, peak_avg=peak_avg$V1, peak_sd=peak_sd$V1, num_unstable_ks=num_unstable_ks$V1,num_unstable=num_unstable$V1, num_called = 516876-num_na$V1)
 sampledat1n$prop_unstable<-sampledat1n$num_unstable/sampledat1n$num_called
@@ -100,7 +49,7 @@ emptysamples<-as.character(emptysamples)
 data3<-data2[!(SAMPLE_NAME %in% emptysamples)]
 fwrite(data3, '/net/shendure/vol7/stevesal/MSI_TCGA_project/robjs/TCGA_subset_with_MSI_merged_full_analysis_msi_values_converted_to_numeric_duplicates_eliminated_post_review_exomes_added_empty_samples_removed_062416.txt', sep='\t')
 
-data2<-fread('/net/shendure/vol7/stevesal/MSI_TCGA_project/robjs/TCGA_subset_with_MSI_merged_full_analysis_msi_values_converted_to_numeric_duplicates_eliminated_post_review_exomes_added_empty_samples_removed_062416.txt', sep='\t', showProgress=T) #32 min
+data2<-fread('/net/shendure/vol7/stevesal/MSI_TCGA_project/robjs/TCGA_subset_with_MSI_merged_full_analysis_msi_values_converted_to_numeric_duplicates_eliminated_post_review_exomes_added_empty_samples_removed_062416.txt', sep='\t', showProgress=T)
 
 coadread_msi_status<-read.delim('/net/shendure/vol7/stevesal/MSI_TCGA_project/coadread_tcga_pub_clinical_data.tsv', header=T, stringsAsFactors=F)
 stad_msi_status<-read.delim('/net/shendure/vol7/stevesal/MSI_TCGA_project/stad_tcga_pub_clinical_data.tsv', header=T, stringsAsFactors=F)
@@ -150,7 +99,7 @@ dev.off()
 
 sampledat1ntemp<-sampledat1n
 
-#looking at old model
+#looking at how v 1.0 performs with an outgroup and compares with v 2.0 with nearly 6k exomes
 sampledat1n$old_msi_pred<-rep('MSS',dim(sampledat1n)[1])
 sampledat1n$old_msi_pred[which(sampledat1n$peak_avg>=0.0053)]<-'MSI-H'
 sampledat1n2<-sampledat1n
@@ -236,7 +185,7 @@ write.csv(misclassoutput2,'/net/shendure/vol3/data/nobackup/hauser/Shendure/msi/
 
 allmisclass<-msisub[which(msisub$old_msi_pred!=msisub$msi),]
 
-#training a new mosaic, old model said peak_avg >= 0.0053 was MSI-H
+#training a new mosaic, old model indicated peak_avg >= 0.0053 was MSI-H (v 2.0)
 require(caret)
 trainctrl <- trainControl(summaryFunction=twoClassSummary,classProb=TRUE)
 rfFuncs$summary<-defaultSummary
@@ -305,16 +254,6 @@ registerDoMC(cores = 4)
                    n.trees=100,
                    allowParallel=TRUE))
 
-library(rattle)
-pdf('/net/shendure/vol3/data/nobackup/hauser/Shendure/msi/mss_msi_classification_tree_weighted_fancy_post_review_10xcv_062816.pdf',width=7*1.5,height=7*1.5)
-fancyRpartPlot(rpartfit1$finalModel)
-dev.off()
-
-library(rattle)
-pdf('/net/shendure/vol3/data/nobackup/hauser/Shendure/msi/mss_msi_classification_tree_weighted_fancy_post_review_10xcv_just_peak_avg_prop_unstable_062716.pdf',width=7*1.5,height=7*1.5)
-fancyRpartPlot(rpartfit1_peak_avg$finalModel)
-dev.off()
-
 pdf('/net/shendure/vol3/data/nobackup/hauser/Shendure/msi/mss_msi_classification_tree_weighted_post_review_062716.pdf',width=7*1.5,height=7*1.5)
 plot(rpartfit1$finalModel, main="Classification Tree for MSI")
 text(rpartfit1$finalModel, use.n=TRUE, all=TRUE, cex=.8)
@@ -325,7 +264,7 @@ load('/net/shendure/vol3/data/nobackup/hauser/Shendure/msi/batch1_results_post_r
 
 data3[,MSI_STATUS:=sampleinfo1n$MSI_STATUS[match(data3$SAMPLE_NAME,sampleinfo1n$SAMPLE_NAME)]]
 
-#looking for specific sites that can better differentiate MSI-H and MSS tumors
+#looking for specific sites that can potentially better differentiate MSI-H and MSS tumors
 msidata<-data3[MSI_STATUS == "MSI-H"]
 mssdata<-data3[MSI_STATUS == "MSS"]
 msi_mean_locus_peaks<-msidata[,mean(PEAK_DIFFERENCE_VALUE,na.rm=T),by=LOCUS_COORDINATES]
@@ -349,6 +288,7 @@ system.time(fisher_pvals<-a[,fisher.test(matrix(c(V2,171-V2-V4,V3,446-V3-V5),nro
 
 require(qvalue)
 fisher_pvals$V1[fisher_pvals$V1>1]<-1
+
 #adjust for multiple hypotheses testing using Storey's q-value
 fisher_pvals[,qvals:=qvalue(fisher_pvals$V1)$qvalues]
 
@@ -398,9 +338,9 @@ set.seed(101)
 ucecsmall[is.na(ucecsmall)]<-0
 ucecsmall2<-ucecsmall[ucecsmall$msi=='MSI-H' | ucecsmall$msi=='MSS',]
 longresults2 <- rfe(ucecsmall2[,c(2:5,7,13:107)], factor(ucecsmall2$msi), sizes=subsets,rfeControl=ctrl,trControl=trainctrl,metric="Accuracy")
-
 longresults3 <- rfe(ucecsmall2[,c(2,13:107)], factor(ucecsmall2$corrected_msi), sizes=subsets,rfeControl=ctrl,trControl=trainctrl,metric="Kappa")
 
+#ucecsmall2$X8.7679723.7679741 is the most significant loci to differentiate MSI-H from MSS
 
 info<-cbind(misclass,ucecsmall[match(misclass$sample_name,ucecsmall$sample_name),c(1:10,104)])
 
@@ -413,6 +353,8 @@ ucecsmall2$corrected_msi<-sampledat1n$corrected_msi[match(ucecsmall2$sample_name
 weight_test<-as.factor(ucecsmall2$msi)
 levels(weight_test)<-rev(table(weight_test))
 weight_test<-as.numeric(as.matrix(weight_test))
+
+#evaluating weighted vs. unweighted learning to estimate optimal parameters for final MOSAIC model
 
 system.time(rpartfit2 <- train(msi ~ peak_avg + as.factor(ucecsmall2$X8.7679723.7679741), data = ucecsmall2,
                    method = "rpart",
@@ -489,6 +431,7 @@ clindat$yearstobirth<-as.numeric(as.matrix(clindat$yearstobirth))
 clindat$peak_avg<-sampledat$peak_avg[match(clindat$sample_name,sampledat$sample_name)]
 clindat<-clindat[-which(clindat$num_unstable>10000),]
 
+#evaluating MMR mutations for reviewers
 require(TCGA2STAT)
 load('/net/shendure/vol3/data/nobackup/hauser/Shendure/msi/finalsampledata_062216.robj')
 cancers<-as.character(unique(sampledat$tumor_type))
@@ -529,7 +472,7 @@ data[, TUMOR_TYPE := sampleinfo1n$TUMOR_TYPE[match(data$SAMPLE_NAME,sampleinfo1n
 
 fwrite(data, '/net/shendure/vol7/stevesal/MSI_TCGA_project/robjs/TCGA_subset_with_MSI_merged_full_analysis_msi_values_converted_to_numeric_duplicates_eliminated_post_review_exomes_added_empty_samples_removed_063016.txt', sep='\t')
 
-#locus output
+#calculating locus output
 system.time(locus_output<-data[,j=list(median_peak_diff = as.double(median(PEAK_DIFFERENCE_VALUE,na.rm=T)), num_unstable = length(which(PEAK_DIFFERENCE_VALUE>0)), num_missing =  length(which(is.na(PEAK_DIFFERENCE_VALUE)==T)), num_present = length(which(is.na(PEAK_DIFFERENCE_VALUE)==F))),by=list(TUMOR_TYPE,MSI_STATUS,LOCUS_COORDINATES)]) #500s
 
 load('/net/shendure/vol3/data/nobackup/hauser/Shendure/msi/tcga_locusinfo.robj')
