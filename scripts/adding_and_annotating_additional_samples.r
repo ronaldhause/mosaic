@@ -94,7 +94,7 @@ fwrite(data, '/net/shendure/vol7/stevesal/MSI_TCGA_project/robjs/lihc_gbm_skcm_m
 #locus output
 system.time(locus_output<-data[,j=list(median_peak_diff = as.double(median(PEAK_DIFFERENCE_VALUE,na.rm=T)), num_unstable = length(which(PEAK_DIFFERENCE_VALUE>0)), num_missing =  length(which(is.na(PEAK_DIFFERENCE_VALUE)==T)), num_present = length(which(is.na(PEAK_DIFFERENCE_VALUE)==F))),by=list(TUMOR_TYPE,MSI_STATUS,LOCUS_COORDINATES)]) #500s
 
-load('/net/shendure/vol3/data/nobackup/hauser/Shendure/msi/tcga_locusinfo.robj')
+load('/net/shendure/vol12/projects/msi_tcga/tcga_locusinfo.robj')
 colnames(locus_output)[1:3]<-c('tumor_type', 'msi_status', 'locus')
 locus_output[, genomic_class := locusinfo$GENOMIC_CLASS[match(locus_output$locus,locusinfo$LOCUS_COORDINATES)]]
 locus_output$gene<-locusinfo$GENE[match(locus_output$locus,locusinfo$LOCUS_COORDINATES)]

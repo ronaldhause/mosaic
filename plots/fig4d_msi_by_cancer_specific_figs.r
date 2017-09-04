@@ -28,7 +28,7 @@ props<-data.frame(matrix(unlist(lapply(prop_results,function(x)x$estimate)),nrow
 #save(prop_results,file='/net/shendure/vol3/data/nobackup/hauser/Shendure/msi/msih_cancer_specific_prop_test_results_071216.robj')
 prop_sums<-apply(props,1,sum)
 #100663/132535 76% of sites are stable
-colnames(props)<-c('COAD','READ','UCEC','STAD')
+colnames(props)<-c('COAD','READ','STAD','UCEC')
 unstablesites<-apply(fisherdat2, 1,function(x)sum(as.numeric(x[unstable])))
 allcancers<-apply(fisherdat2,1,function(x)sum(as.numeric(x[all])))
 propunstable<-unstablesites/allcancers

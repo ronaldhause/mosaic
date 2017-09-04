@@ -95,7 +95,7 @@ gap.barplot(e[,2], gap=c(7000,339900),xaxlab=rownames(e),col=rep(cols[2],10),yti
 dev.off()
 
 #figure 1f and supplementary figure 1
-load('/net/shendure/vol3/data/nobackup/hauser/Shendure/msi/mosaic_training_data_062916.robj')
+load('/net/shendure/vol12/projects/msi_tcga/mosaic_training_data_062916.robj')
 require(ggplot2)
 require(scales)
 mosaic_training$defbsite<-gsub("NA","ND",mosaic_training$defbsite)
