@@ -260,7 +260,7 @@ text(rpartfit1$finalModel, use.n=TRUE, all=TRUE, cex=.8)
 dev.off()
 
 load('/net/shendure/vol3/data/nobackup/hauser/Shendure/msi/batch1_sampleinfo_post_review_msi_updated_062916.robj')
-load('/net/shendure/vol3/data/nobackup/hauser/Shendure/msi/batch1_results_post_review_msi_updated_062916.robj')
+load('/net/shendure/vol12/projects/msi_tcga/batch1_results_post_review_msi_updated_062916.robj')
 
 data3[,MSI_STATUS:=sampleinfo1n$MSI_STATUS[match(data3$SAMPLE_NAME,sampleinfo1n$SAMPLE_NAME)]]
 
