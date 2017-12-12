@@ -10,6 +10,12 @@ Microsatellite instability (MSI), the spontaneous loss or gain of nucleotides fr
 ## Data
 Primary exome sequence alignments can be downloaded from the [TCGA Research Network](http://cancergenomenih.gov/). Primary and processed MSI calls derived from these exome alignments, the MOSAIC classifier itself, and intermediate results and tables are available [here](http://krishna.gs.washington.edu/content/members/hauser/mosaic/).
 
+## Usage
+1. Call microsatellite markers in hg18 or hg19 using MISA or download those markers from the UCSC Genome Browser.
+2. Implement mSINGS or lobSTR to identify unstable microsatellites throughout the genome from paired somatic and tumor exome BAMs at each microsatellite site.
+3. Reformat those outputs into a two or three column format that includes "msi", "peak_avg", and "X8.7679723.7679741"; that is, an ID for the genomic coordinates centered on each microsatellite marker (msi), the average gain in unique alleles in tumor relative to matched normal tissue across all interrogated microsatellites (peak_avg), and a binary variable indicating whether the locus within DEFB105A/B, chr. 8:7679723–7679741 ("X8.7679723.7679741") is unstable.
+4. Use the MOSAIC classifier ("mosaic_classifier_063016.robj") to predict those MSI classes based on these data: `predict(mosaic, <data>, type="raw")`
+
 ## Dependencies
 Perl, Python, and R languages were used for various steps throughout the primary and secondary analyses, including the ggplot2, rpart, clusterProfiler, qvalue, and survival libraries, among others. We also used several external computational tools, such as MISA, mSINGS, and Grid Engine.
 
