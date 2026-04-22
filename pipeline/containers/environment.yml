@@ -1,0 +1,20 @@
+name: mosaic
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - r-base=4.3
+  - r-data.table
+  - r-optparse
+  - python=3.11
+  - pandas
+  - samtools
+  - bedtools
+  - perl
+  - wget
+  - pip
+  - pip:
+      - msings
+# misa.pl must be fetched separately (see containers/Dockerfile) and
+# placed on PATH. annovar requires personal registration and is not
+# shipped here.
