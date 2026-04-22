@@ -1,0 +1,70 @@
+name: ci
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install ruff
+      - run: ruff check pipeline/bin pipeline/tests
+      - name: shellcheck
+        uses: ludeeus/action-shellcheck@master
+        with:
+          scandir: pipeline/bin
+          severity: warning
+
+  syntax-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: nf-core/setup-nextflow@v2
+      - name: nextflow --help on main.nf
+        run: nextflow run pipeline/main.nf --help
+      - name: nextflow --help on build_reference.nf
+        run: nextflow run pipeline/build_reference.nf --help
+      - name: makefile dry-run
+        run: make -n -C pipeline clean
+      - name: python syntax
+        run: python3 -m compileall -q pipeline/bin
+
+  classifier-load:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: r-lib/actions/setup-r@v2
+        with: { r-version: "4.4" }
+      - name: load bundled classifier
+        run: |
+          Rscript -e '
+            e <- new.env()
+            load("pipeline/assets/mosaic_classifier_063016.robj", envir = e)
+            stopifnot("mosaic" %in% ls(e))
+            stopifnot(inherits(e$mosaic, c("train", "train.formula", "rpart")))
+            cat("classifier loaded:", paste(class(e$mosaic), collapse=","), "\n")
+          '
+
+  python-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install pytest
+      - run: pytest pipeline/tests/python -v
+
+  r-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: r-lib/actions/setup-r@v2
+        with: { r-version: "4.4" }
+      - name: install r deps
+        run: Rscript -e 'install.packages(c("data.table", "optparse"), repos="https://cloud.r-project.org")'
+      - run: bash pipeline/tests/R/test_classify.sh

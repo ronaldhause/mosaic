@@ -67,7 +67,7 @@ def merge_adjacent(loci: pd.DataFrame, max_gap: int = 10) -> pd.DataFrame:
             "locus_id": f"{bare}:{row['start']}-{row['end']}",
             "repeat_type": repeat_type,
             "repeat_subunits": ",".join(subs),
-            "subunit_lengths": ",".join(str(l) for l in lens),
+            "subunit_lengths": ",".join(str(x) for x in lens),
             "n_repeats": ",".join(str(n) for n in row["_n_repeats"]),
             "is_compound": is_compound,
             "is_complex": is_complex,

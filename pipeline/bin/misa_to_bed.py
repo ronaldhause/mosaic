@@ -23,7 +23,6 @@ import sys
 
 import pandas as pd
 
-
 SSR_RE = re.compile(r"^\(([ACGTN]+)\)(\d+)$", re.IGNORECASE)
 AUTOSOMES = {str(i) for i in range(1, 23)} | {f"chr{i}" for i in range(1, 23)}
 

@@ -12,7 +12,6 @@ import sys
 
 import pandas as pd
 
-
 COLS = [
     "locus_id", "chrom", "start", "end", "repeat_type",
     "repeat_subunits", "subunit_lengths", "n_repeats",

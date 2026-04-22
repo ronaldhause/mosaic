@@ -74,4 +74,4 @@ feats[, msi_status := mapply(
                     threshold_low  = args$threshold_low)
 )]
 
-fwrite(feats, args$output)
+fwrite(feats, args$output, na = "NA")
