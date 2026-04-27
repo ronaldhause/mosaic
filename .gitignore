@@ -1,0 +1,4 @@
+pipeline/cache/
+pipeline/results/
+pipeline/work/
+.nextflow*
